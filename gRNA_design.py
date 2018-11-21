@@ -168,13 +168,13 @@ def main():
         print('gRNAs:{}'.format(gRNA))
 
     #output
+    df=pd.DataFrame(data=gRNA,columns=['PAM','gRNA'])
+    df.index+=1
     try:
         printing
         print('gRNAs:')
-        print(gRNA)
+        print(df)
     except:
-        df=pd.DataFrame(data=gRNA,columns=['PAM','gRNA'])
-        df.index+=1
         df.to_csv(path_or_buf='gRNA.csv')
         print('gRNA sequence saved!')
 
