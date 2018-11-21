@@ -1,6 +1,7 @@
 import argparse
 import re
 import sys
+import itertools
 
 #exception handling
 def seq_check(seq,Cas):
@@ -12,7 +13,16 @@ def seq_check(seq,Cas):
 
 #find frequency of segments
 def frequency(seq, length):
-    pass
+    seg=[]
+    #find all the segments of length in seq
+    for i in range(length):
+        seg.append(re.findall('\D{}{}{}'.format('{',length,'}'),seq[i:len(seq)]))
+    seg=list(itertools.chain(*seg))#flatten
+    seg=list(set(seg))#remove duplicate
+    fre=[]
+    for s in seg:
+        fre.append(len(re.findall(s,seq)))
+    return seg, fre
 
 #find unique segments for CRISPR editing
 def editing(fre):
@@ -53,10 +63,10 @@ def main():
                         default='editing',
                         help='Usage of the gRNA')
 
-        parser.add_argument('-p',
-                            '--printing',
-                            action='store_true',
-                            help='Print gRNA seqence')
+    parser.add_argument('-p',
+                        '--printing',
+                        action='store_true',
+                        help='Print gRNA seqence')
 
     #command line processing
     args = parser.parse_args()
@@ -79,13 +89,15 @@ def main():
 
     #exceptional handling
     if not seq_check(seq,Cas):
-        sys.exit('please input a nucleic acid sequence!')
+        sys.exit('Please input a nucleic acid sequence!')
+    elif len(seq) < length:
+        sys.exit('Please input a longer sequence!')
     else:
         print('Computing gRNA...')
 
     #find frequency of segents
-    fre=ferqency(seq,length)
-
+    (seg, fre)=frequency(seq,length)
+    
     #find gRNA in the segments
     if multitarget:
         gRNA=imaging(fre)
@@ -93,10 +105,12 @@ def main():
         gRNA=editing(fre)
     gRNA=withpam(gRNA,pam,ppam)
 
-    if printing:
+    try:
+        printing
+        print('gRNAs:')
         print(gRNA)
-    else:
-        gRNA.to_csv(path_or_buf='gRNA.csv')
+    except:
+        #gRNA.to_csv(path_or_buf='gRNA.csv')
         print('gRNA sequence saved!')
 
 #This is the start of the program
