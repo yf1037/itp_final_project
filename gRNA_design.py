@@ -95,6 +95,12 @@ def main():
                         action='store_true',
                         help='Print gRNA seqence')
 
+    parser.add_argument('-dbg',
+                        '--debug',
+                        default=False,
+                        action='store_true',
+                        help='debug mode')
+
     #command line processing
     args = parser.parse_args()
     file=args.seq
@@ -135,10 +141,16 @@ def main():
     #find frequency of segments
     (seg, fre)=frequency(seq,length)
 
+    if debug:
+        print('segments:{}'.format(seg))
+        print('frequency:{}'.format(fre))
+
     #iterate through the segments until find gRNA(s)
     i=0
     while len(seg)-i*10>=0:
         idx=filter_fre(fre,multitarget,i)
+        if debug:
+            print('idx of segments:{}'.format(idx))
         gRNA=withpam(seg,idx,pam,ppam)
         i+=1
         if gRNA.size > 0:
@@ -146,6 +158,9 @@ def main():
 
     if gRNA.size == 0:
         sys.exit('No gRNA found. Please try another seqence!')
+
+    if debug:
+        print('gRNAs:{}'.format(gRNA))
 
     #output
     try:
