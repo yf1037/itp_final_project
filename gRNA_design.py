@@ -2,6 +2,8 @@ import argparse
 import re
 import sys
 import itertools
+import numpy as np
+import pandas as pd
 
 #exception handling
 def seq_check(seq,Cas):
@@ -24,17 +26,42 @@ def frequency(seq, length):
         fre.append(len(re.findall(s,seq)))
     return seg, fre
 
-#find unique segments for CRISPR editing
-def editing(fre):
-    pass
-
-#find most abondant segments for CRISPR imaging
-def imaging(fre):
-    pass
+#find segments with right frequency
+def filter_fre(fre,multitarget,t):
+    sort_index = np.argsort(fre)
+    fre.sort()
+    if multitarget:#find most abondant segments for CRISPR imaging
+        sort=np.flip(sort_index)
+        sort=sort[10*t:len(sort)]
+        try:
+            idx=sort[0:10]
+        except:
+            idx=sort
+        return idx
+    else:#find unique segments for CRISPR editing
+        i=0
+        for j in range(len(fre)):
+            if fre[j] ==1:
+                i+=1
+            else:
+                break
+        if i != 0:
+            return sort_index[0:i]
+        else:
+            sys.exit('No unique segment found in the input sequence. Please try another sequence!')
 
 #find sequence with PAM
 def withpam(seg,idx,pam,ppam):
-    pass
+    gRNA=[]
+    pam_arry=[]
+    for s in np.array(seg)[idx]:
+        if ppam=='3':
+            s=s[::-1]
+        p = re.findall(pam,s[0:len(pam)])
+        if p == s[0:len(pam)]:
+            gRNA.append(s[len(pam):length])
+            pam_arry.append(p)
+    return np.column_stack([pam_arry,gRNA])
 
 
 def main():
@@ -105,22 +132,29 @@ def main():
     else:
         print('Computing gRNA...')
 
-    #find frequency of segents
+    #find frequency of segments
     (seg, fre)=frequency(seq,length)
 
-    #find gRNA in the segments
-    if multitarget:
-        idx=imaging(fre)
-    else:
-        idx=editing(fre)
-    gRNA=withpam(seg,idx,pam,ppam)
+    #iterate through the segments until find gRNA(s)
+    i=0
+    while len(seg)-i*10>=0:
+        idx=filter_fre(fre,multitarget,i)
+        gRNA=withpam(seg,idx,pam,ppam)
+        i+=1
+        if gRNA.size > 0:
+            break
 
+    if gRNA.size == 0:
+        sys.exit('No gRNA found. Please try another seqence!')
+
+    #output
     try:
         printing
         print('gRNAs:')
         print(gRNA)
     except:
-        #gRNA.to_csv(path_or_buf='gRNA.csv')
+        print(gRNA)
+        pd.DataFrame(gRNA).to_csv(path_or_buf='gRNA.csv')
         print('gRNA sequence saved!')
 
 #This is the start of the program
