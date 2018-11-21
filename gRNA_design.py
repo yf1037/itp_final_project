@@ -33,7 +33,7 @@ def imaging(fre):
     pass
 
 #find sequence with PAM
-def withpam(seg,pam,ppam):
+def withpam(seg,idx,pam,ppam):
     pass
 
 
@@ -43,7 +43,7 @@ def main():
 
     parser.add_argument('seq',
                         type = str,
-                        help='DNA/RNA sequence or fasta file location')
+                        help='Input fasta file containing one nucleic acid sequence or a nucleic acid sequence')
 
     parser.add_argument('-c',
                         '--Cas',
@@ -70,7 +70,7 @@ def main():
 
     #command line processing
     args = parser.parse_args()
-    seq=args.seq
+    file=args.seq
     length=args.length
     Cas=args.Cas
     if Cas == '9':
@@ -87,6 +87,16 @@ def main():
     else:
         multitarget= False
 
+    #try open fasta file, if not, treat input as nucleic acid sequence to analyze
+    try:
+        seq=''
+        with open(file,'r') as f:
+            for line in f:
+                if not line.startswith('>'):
+                    seq+=line.strip()
+    except:
+        seq=file
+
     #exceptional handling
     if not seq_check(seq,Cas):
         sys.exit('Please input a nucleic acid sequence!')
@@ -97,13 +107,13 @@ def main():
 
     #find frequency of segents
     (seg, fre)=frequency(seq,length)
-    
+
     #find gRNA in the segments
     if multitarget:
-        gRNA=imaging(fre)
+        idx=imaging(fre)
     else:
-        gRNA=editing(fre)
-    gRNA=withpam(gRNA,pam,ppam)
+        idx=editing(fre)
+    gRNA=withpam(seg,idx,pam,ppam)
 
     try:
         printing
