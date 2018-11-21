@@ -10,20 +10,25 @@ def seq_check(seq,Cas):
         return True
     return False
 
-#find unique segments for CRISPR editing
+#find frequency of segments
+def frequency(seq, length):
+    pass
 
+#find unique segments for CRISPR editing
+def editing(fre):
+    pass
 
 #find most abondant segments for CRISPR imaging
+def imaging(fre):
+    pass
+
+#find sequence with PAM
+def withpam(seg,pam,ppam):
+    pass
 
 
-#find segments with PAM
-
-
-#return gRNA
-
-#command line interface
 def main():
-    # Create a parser:
+    #command line interface
     parser = argparse.ArgumentParser(description='gRNA design tool for CRISPR/Cas')
 
     parser.add_argument('seq',
@@ -48,6 +53,12 @@ def main():
                         default='editing',
                         help='Usage of the gRNA')
 
+        parser.add_argument('-p',
+                            '--printing',
+                            action='store_true',
+                            help='Print gRNA seqence')
+
+    #command line processing
     args = parser.parse_args()
     seq=args.seq
     length=args.length
@@ -66,10 +77,27 @@ def main():
     else:
         multitarget= False
 
+    #exceptional handling
     if not seq_check(seq,Cas):
         sys.exit('please input a nucleic acid sequence!')
     else:
-        print('so far so good!')
+        print('Computing gRNA...')
+
+    #find frequency of segents
+    fre=ferqency(seq,length)
+
+    #find gRNA in the segments
+    if multitarget:
+        gRNA=imaging(fre)
+    else:
+        gRNA=editing(fre)
+    gRNA=withpam(gRNA,pam,ppam)
+
+    if printing:
+        print(gRNA)
+    else:
+        gRNA.to_csv(path_or_buf='gRNA.csv')
+        print('gRNA sequence saved!')
 
 #This is the start of the program
 if __name__=='__main__':
