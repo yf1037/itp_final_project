@@ -57,10 +57,11 @@ def withpam(seg,idx,pam,ppam):
     for s in np.array(seg)[idx]:
         if ppam=='3':
             s=s[::-1]
-        p = re.findall(pam,s[0:len(pam)])
-        if p == s[0:len(pam)]:
-            gRNA.append(s[len(pam):length])
-            pam_arry.append(p)
+        p = re.findall(pam,s)
+        if len(p) >0:
+            if p[0] == s[0:len(p[0])]:
+                gRNA.append(s[len(p[0]):len(s)])
+                pam_arry.append(p)
     return np.column_stack([pam_arry,gRNA])
 
 
@@ -106,15 +107,19 @@ def main():
     file=args.seq
     length=args.length
     Cas=args.Cas
+    debug=args.debug
     if Cas == '9':
-        pam='gg'
+        pam='[atcg]gg'
         ppam='5'
+        spam=3
     elif Cas == '12a':
         pam='ttt[agc]'
         ppam='5'
+        spam=4
     else:
         pam='[auc]'
         ppam='3'
+        spam=1
     if args.use == 'imaging':
         multitarget= True
     else:
@@ -139,7 +144,7 @@ def main():
         print('Computing gRNA...')
 
     #find frequency of segments
-    (seg, fre)=frequency(seq,length)
+    (seg, fre)=frequency(seq,length+spam)
 
     if debug:
         print('segments:{}'.format(seg))
@@ -168,8 +173,9 @@ def main():
         print('gRNAs:')
         print(gRNA)
     except:
-        print(gRNA)
-        pd.DataFrame(gRNA).to_csv(path_or_buf='gRNA.csv')
+        df=pd.DataFrame(data=gRNA,columns=['PAM','gRNA'])
+        df.index+=1
+        df.to_csv(path_or_buf='gRNA.csv')
         print('gRNA sequence saved!')
 
 #This is the start of the program
