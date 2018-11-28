@@ -5,44 +5,47 @@ import itertools
 import numpy as np
 import pandas as pd
 
-#exception handling
-def seq_check(seq,Cas):
-    if re.findall('[agctAGCT]',seq)==list(seq) and (Cas == '9' or '12a'):
+
+# exception handling
+def seq_check(seq, Cas):
+    if re.findall('[agctAGCT]', seq) == list(seq) and (Cas == '9' or '12a'):
         return True
-    elif re.findall('[agcuAGCU]',seq)==list(seq) and Cas == '13a':
+    elif re.findall('[agcuAGCU]', seq) == list(seq) and Cas == '13a':
         return True
     return False
 
-#find frequency of segments
+
+# find frequency of segments
 def frequency(seq, length):
-    seg=[]
-    #find all the segments of length in seq
+    seg = []
+    # find all the segments of length in seq
     for i in range(length):
-        seg.append(re.findall('\D{}{}{}'.format('{',length,'}'),seq[i:len(seq)]))
-    seg=list(itertools.chain(*seg))#flatten
-    seg=list(set(seg))#remove duplicate
-    fre=[]
+        seg.append(re.findall('\D{}{}{}'.format('{', length, '}'), seq[i:len(seq)]))
+    seg = list(itertools.chain(*seg))  # flatten
+    seg = list(set(seg))  # remove duplicate
+    fre = []
     for s in seg:
-        fre.append(len(re.findall(s,seq)))
+        fre.append(len(re.findall(s, seq)))
     return seg, fre
 
-#find segments with right frequency
-def filter_fre(fre,multitarget,t):
+
+# find segments with right frequency
+def filter_fre(fre, multitarget, t):
     sort_index = np.argsort(fre)
     fre.sort()
-    if multitarget:#find most abondant segments for CRISPR imaging
-        sort=np.flip(sort_index)
-        sort=sort[10*t:len(sort)]
+    if multitarget:  # find most abondant segments for CRISPR imaging
+        sort = np.flip(sort_index)
+        sort = sort[10 * t:len(sort)]
         try:
-            idx=sort[0:10]
+            idx = sort[0:10]
         except:
-            idx=sort
+            idx = sort
         return idx
-    else:#find unique segments for CRISPR editing
-        i=0
+    else:  # find unique segments for CRISPR editing
+        i = 0
         for j in range(len(fre)):
-            if fre[j] ==1:
-                i+=1
+            if fre[j] == 1:
+                i += 1
             else:
                 break
         if i != 0:
@@ -50,33 +53,34 @@ def filter_fre(fre,multitarget,t):
         else:
             sys.exit('No unique segment found in the input sequence. Please try another sequence!')
 
-#find sequence with PAM
-def withpam(seg,idx,pam,ppam):
-    gRNA=[]
-    pam_arry=[]
+
+# find sequence with PAM
+def withpam(seg, idx, pam, ppam):
+    gRNA = []
+    pam_arry = []
     for s in np.array(seg)[idx]:
-        if ppam=='3':
-            s=s[::-1]
-        p = re.findall(pam,s)
-        if len(p) >0:
+        if ppam == '3':
+            s = s[::-1]
+        p = re.findall(pam, s)
+        if len(p) > 0:
             if p[0] == s[0:len(p[0])]:
                 gRNA.append(s[len(p[0]):len(s)])
-                pam_arry.append(p)
-    return np.column_stack([pam_arry,gRNA])
+                pam_arry.append(p[0])
+    return np.column_stack([pam_arry, gRNA])
 
 
 def main():
-    #command line interface
+    # command line interface
     parser = argparse.ArgumentParser(description='gRNA design tool for CRISPR/Cas')
 
     parser.add_argument('seq',
-                        type = str,
+                        type=str,
                         help='Input fasta file containing one nucleic acid sequence or a nucleic acid sequence')
 
     parser.add_argument('-c',
                         '--Cas',
-    					help='The type of CRISPR/Cas system',
-                        choices=['9','12a','13a'],
+                        help='The type of CRISPR/Cas system',
+                        choices=['9', '12a', '13a'],
                         default='9')
 
     parser.add_argument('-l',
@@ -87,7 +91,7 @@ def main():
 
     parser.add_argument('-u',
                         '--use',
-                        choices=['editing','imaging'],
+                        choices=['editing', 'imaging'],
                         default='editing',
                         help='Usage of the gRNA')
 
@@ -102,62 +106,63 @@ def main():
                         action='store_true',
                         help='debug mode')
 
-    #command line processing
+    # command line processing
     args = parser.parse_args()
-    file=args.seq
-    length=args.length
-    Cas=args.Cas
-    debug=args.debug
+    file = args.seq
+    length = args.length
+    Cas = args.Cas
+    debug = args.debug
     if Cas == '9':
-        pam='[atcg]gg'
-        ppam='5'
-        spam=3
+        pam = '[atcg]gg'
+        ppam = '5'
+        spam = 3
     elif Cas == '12a':
-        pam='ttt[agc]'
-        ppam='5'
-        spam=4
+        pam = 'ttt[agc]'
+        ppam = '5'
+        spam = 4
     else:
-        pam='[auc]'
-        ppam='3'
-        spam=1
+        pam = '[auc]'
+        ppam = '3'
+        spam = 1
     if args.use == 'imaging':
-        multitarget= True
+        multitarget = True
     else:
-        multitarget= False
+        multitarget = False
 
-    #try open fasta file, if not, treat input as nucleic acid sequence to analyze
+    # try open fasta file, if not, treat input as nucleic acid sequence to analyze
     try:
-        seq=''
-        with open(file,'r') as f:
+        seq = ''
+        with open(file, 'r') as f:
             for line in f:
                 if not line.startswith('>'):
-                    seq+=line.strip()
+                    seq += line.strip()
     except:
-        seq=file
+        seq = file
+    seq=seq.lower()
 
-    #exceptional handling
-    if not seq_check(seq,Cas):
+    # exceptional handling
+    if not seq_check(seq, Cas):
         sys.exit('Please input a nucleic acid sequence!')
     elif len(seq) < length:
         sys.exit('Please input a longer sequence!')
     else:
         print('Computing gRNA...')
 
-    #find frequency of segments
-    (seg, fre)=frequency(seq,length+spam)
+    # find frequency of segments
+    (seg, fre) = frequency(seq, length + spam)
 
     if debug:
         print('segments:{}'.format(seg))
         print('frequency:{}'.format(fre))
 
-    #iterate through the segments until find gRNA(s)
-    i=0
-    while len(seg)-i*10>=0:
-        idx=filter_fre(fre,multitarget,i)
+    # iterate through the segments until find gRNA(s)
+    i = 0
+    while len(seg) - i * 10 >= 0:
+        idx = filter_fre(fre, multitarget, i)
         if debug:
             print('idx of segments:{}'.format(idx))
-        gRNA=withpam(seg,idx,pam,ppam)
-        i+=1
+        gRNA = withpam(seg, idx, pam, ppam)
+        i += 1
         if gRNA.size > 0:
             break
 
@@ -167,9 +172,9 @@ def main():
     if debug:
         print('gRNAs:{}'.format(gRNA))
 
-    #output
-    df=pd.DataFrame(data=gRNA,columns=['PAM','gRNA'])
-    df.index+=1
+    # output
+    df = pd.DataFrame(data=gRNA, columns=['PAM', 'gRNA'])
+    df.index += 1
     try:
         printing
         print('gRNAs:')
@@ -178,6 +183,7 @@ def main():
         df.to_csv(path_or_buf='gRNA.csv')
         print('gRNA sequence saved!')
 
-#This is the start of the program
-if __name__=='__main__':
+
+# This is the start of the program
+if __name__ == '__main__':
     main()
