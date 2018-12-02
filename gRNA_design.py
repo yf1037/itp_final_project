@@ -35,7 +35,7 @@ def filter_fre(fre, multitarget, t):
     fre.sort()
     if multitarget:  # find most abondant segments for CRISPR imaging
         sort = np.flip(sort_index)
-        sort = sort[10 * t:len(sort)]
+        sort = sort[t:len(sort)]
         try:
             idx = sort[0:10]
         except:
@@ -112,6 +112,7 @@ def main():
     length = args.length
     Cas = args.Cas
     debug = args.debug
+    printing=args.printing
     if Cas == '9':
         pam = '[atcg]gg'
         ppam = '5'
@@ -157,12 +158,12 @@ def main():
 
     # iterate through the segments until find gRNA(s)
     i = 0
-    while len(seg) - i * 10 >= 0:
+    while len(seg) - i > 0:
         idx = filter_fre(fre, multitarget, i)
         if debug:
             print('idx of segments:{}'.format(idx))
         gRNA = withpam(seg, idx, pam, ppam)
-        i += 1
+        i += len(idx)
         if gRNA.size > 0:
             break
 
@@ -175,11 +176,11 @@ def main():
     # output
     df = pd.DataFrame(data=gRNA, columns=['PAM', 'gRNA'])
     df.index += 1
-    try:
-        printing
+
+    if printing:
         print('gRNAs:')
         print(df)
-    except:
+    else:
         df.to_csv(path_or_buf='gRNA.csv')
         print('gRNA sequence saved!')
 
