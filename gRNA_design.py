@@ -33,7 +33,7 @@ def frequency(seq, length):
 def filter_fre(fre, multitarget, t):
     sort_index = np.argsort(fre)
     fre.sort()
-    if multitarget:  # find most abondant segments for CRISPR imaging
+    if multitarget:  # find most abundant segments for CRISPR imaging
         sort = np.flip(sort_index)
         sort = sort[t:len(sort)]
         try:
@@ -108,11 +108,11 @@ def main():
 
     # command line processing
     args = parser.parse_args()
-    file = args.seq
+    files = args.seq
     length = args.length
     Cas = args.Cas
     debug = args.debug
-    printing=args.printing
+    printing = args.printing
     if Cas == '9':
         pam = '[atcg]gg'
         ppam = '5'
@@ -133,13 +133,13 @@ def main():
     # try open fasta file, if not, treat input as nucleic acid sequence to analyze
     try:
         seq = ''
-        with open(file, 'r') as f:
+        with open(files, 'r') as f:
             for line in f:
                 if not line.startswith('>'):
                     seq += line.strip()
     except:
-        seq = file
-    seq=seq.lower()
+        seq = files
+    seq = seq.lower()
 
     # exceptional handling
     if not seq_check(seq, Cas):
@@ -158,6 +158,7 @@ def main():
 
     # iterate through the segments until find gRNA(s)
     i = 0
+    gRNA=[]
     while len(seg) - i > 0:
         idx = filter_fre(fre, multitarget, i)
         if debug:
